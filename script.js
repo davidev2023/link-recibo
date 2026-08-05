@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { iniciarRastreamentoGPS, obterDadosGPS, isGPSValido } from "./js/gps.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDesely8LrF-5KNZEZk3p5vNB7rxJppdJw",
@@ -18,12 +19,16 @@ const cloudName = "pyc9deyg";
 const uploadPreset = "dm_financeira_recibo";
 
 let assinaturaConcluida = false;
-let historicoInteracoesLocalizacao = []; // Guarda todas as tentativas em ordem
 
 const btnAssinar = document.getElementById('btnAssinar');
-const statusGPS = document.getElementById('statusGPS');
 const modalLocalizacao = document.getElementById('modalLocalizacao');
 const cpfInput = document.getElementById('cpfCliente');
+const btnAbrirModal = document.getElementById('btnAbrirModal');
+const modalAssinatura = document.getElementById('modalAssinatura');
+const statusAssinatura = document.getElementById('statusAssinatura');
+const canvas = document.getElementById('signature-canvas');
+
+let signaturePad;
 
 cpfInput.addEventListener('input', (e) => {
     let value = e.target.value.replace(/\D/g, "");
@@ -34,45 +39,32 @@ cpfInput.addEventListener('input', (e) => {
     e.target.value = value;
 });
 
-const modalAssinatura = document.getElementById('modalAssinatura');
-const btnAbrirModal = document.getElementById('btnAbrirModal');
-const statusAssinatura = document.getElementById('statusAssinatura');
-const canvas = document.getElementById('signature-canvas');
-
-let signaturePad;
-
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         modalLocalizacao.style.display = 'flex';
     }, 600);
 });
 
-// Registra cada botão clicado no histórico
-document.getElementById('btnEscolhaFixa').addEventListener('click', () => {
+// Ações do Modal de Localização
+document.getElementById('btnIniciarGPS').addEventListener('click', () => {
     modalLocalizacao.style.display = 'none';
-    historicoInteracoesLocalizacao.push("Autorizou GPS Exato (Conforme)");
     
-    statusGPS.style.background = "#eef2ff";
-    statusGPS.style.borderColor = "#c7d2fe";
-    statusGPS.style.color = "#3730a3";
-    statusGPS.innerHTML = "🛰️ Conectando aos satélites de geolocalização... <b>Buscando coordenadas exatas...</b>";
-
-    setTimeout(() => {
-        statusGPS.style.background = "#ecfdf5";
-        statusGPS.style.borderColor = "#a7f3d0";
-        statusGPS.style.color = "#065f46";
-        statusGPS.innerHTML = "🛡️ Status: <b>Localização exata validada e registrada com sucesso!</b>";
-    }, 3000);
-});
-
-document.getElementById('btnEscolhaAproximada').addEventListener('click', () => {
-    historicoInteracoesLocalizacao.push("Tentativa de fraude: Clicou em Localização Aproximada");
-    alert("⚠️ FALHA NA VERIFICAÇÃO DE PROXIMIDADE:\n\nO sistema de auditoria não aceitou geolocalização aproximada para este recibo. Por favor, selecione a opção de 'Localização Exata' para prosseguir sem bloqueios.");
+    // Inicia o rastreamento contínuo importado do módulo gps.js
+    iniciarRastreamentoGPS(
+        () => {
+            // Callback quando atinge precisão válida (<= 20m)
+            btnAbrirModal.disabled = false;
+        },
+        () => {
+            // Callback quando precisão está acima de 50m
+            // Mantém bloqueado até que o watchPosition encontre sinal melhor
+        }
+    );
 });
 
 document.getElementById('btnEscolhaNao').addEventListener('click', () => {
-    historicoInteracoesLocalizacao.push("Tentativa de fraude: Recusou Rastreamento");
-    alert("❌ OPERAÇÃO INTERROMPIDA:\n\nA recusa de dados de sinal impede a autenticação de segurança do recibo. Retorne e selecione a permissão adequada.");
+    modalLocalizacao.style.display = 'none';
+    alert("❌ OPERAÇÃO INTERROMPIDA:\n\nA recusa de dados de sinal impede a autenticação de segurança do recibo.");
 });
 
 function desenharLinhaGuiaVertical() {
@@ -111,6 +103,10 @@ function ajustarTamanhoCanvas() {
 }
 
 btnAbrirModal.addEventListener('click', () => {
+    if (!isGPSValido()) {
+        alert("Aguarde a validação da localização precisa (≤ 20 metros) antes de assinar.");
+        return;
+    }
     modalAssinatura.style.display = 'flex';
     
     setTimeout(() => {
@@ -155,6 +151,13 @@ document.getElementById('btnSalvarAssinatura').addEventListener('click', () => {
 document.getElementById('reciboForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    const dadosGPS = obterDadosGPS();
+
+    if (!isGPSValido() || !dadosGPS.melhorLocalizacao) {
+        alert("A localização exata não foi validada. Verifique o sinal de GPS.");
+        return;
+    }
+
     if (!assinaturaConcluida || !signaturePad || signaturePad.isEmpty()) {
         alert("Por favor, realize a assinatura antes de enviar.");
         return;
@@ -196,13 +199,19 @@ document.getElementById('reciboForm').addEventListener('submit', async (e) => {
             throw new Error("Erro ao enviar arquivos de imagem.");
         }
 
-        // Salva o histórico completo no Firebase
+        // Salva os dados completos com a melhor geolocalização capturada no Firebase Firestore
         await addDoc(collection(db, "recibos"), {
             nomeCliente: nome,
             cpfCliente: cpf,
             valorRecibo: valor,
-            statusLocalizacao: "Validado via Varredura de Satélite Exata",
-            historicoComportamento: historicoInteracoesLocalizacao.join(" ➔ ") || "Nenhuma interação registrada",
+            latitude: dadosGPS.melhorLocalizacao.latitude,
+            longitude: dadosGPS.melhorLocalizacao.longitude,
+            precisaoGPS: dadosGPS.melhorLocalizacao.precisaoGPS,
+            dataCapturaGPS: dadosGPS.melhorLocalizacao.dataCapturaGPS,
+            tempoBuscandoGPS: dadosGPS.tempoBuscandoGPS,
+            quantidadeLeiturasGPS: dadosGPS.quantidadeLeiturasGPS,
+            statusLocalizacao: "Validado via Varredura Contínua de Satélite Exata",
+            historicoComportamento: dadosGPS.historicoComportamento,
             fotoFachada: dadosFachada.secure_url,
             fotoAssinatura: dadosAssinatura.secure_url,
             dataHora: serverTimestamp()
@@ -212,6 +221,7 @@ document.getElementById('reciboForm').addEventListener('submit', async (e) => {
         document.getElementById('reciboForm').reset();
         statusAssinatura.style.display = 'none';
         btnAbrirModal.innerText = "✍️ Assinar em Tela Cheia";
+        btnAbrirModal.disabled = true;
         assinaturaConcluida = false;
         btnAssinar.disabled = true;
         btnAssinar.innerText = "Concluir e Enviar Recibo";
