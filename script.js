@@ -199,7 +199,7 @@ document.getElementById('reciboForm').addEventListener('submit', async (e) => {
             throw new Error("Erro ao enviar arquivos de imagem.");
         }
 
-        // Salva os dados completos com a melhor geolocalização capturada no Firebase Firestore
+        // Salva os dados completos com a melhor geolocalização e os public_ids para exclusão futura
         await addDoc(collection(db, "recibos"), {
             nomeCliente: nome,
             cpfCliente: cpf,
@@ -213,7 +213,9 @@ document.getElementById('reciboForm').addEventListener('submit', async (e) => {
             statusLocalizacao: "Validado via Varredura Contínua de Satélite Exata",
             historicoComportamento: dadosGPS.historicoComportamento,
             fotoFachada: dadosFachada.secure_url,
+            publicIdFachada: dadosFachada.public_id,
             fotoAssinatura: dadosAssinatura.secure_url,
+            publicIdAssinatura: dadosAssinatura.public_id,
             dataHora: serverTimestamp()
         });
 
